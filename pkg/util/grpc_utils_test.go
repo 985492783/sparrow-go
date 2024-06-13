@@ -39,7 +39,7 @@ func TestRequest(t *testing.T) {
 		return
 	}
 	fmt.Println(request)
-	Registry("util.SimpleRequest", func() integration.Request {
+	RegistryConstruct("util.SimpleRequest", func() integration.Request {
 		return &SimpleRequest{}
 	})
 	parseRequest, err := ParseRequest(request)

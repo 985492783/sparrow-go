@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/985492783/sparrow-go/pkg/center"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
 	"github.com/985492783/sparrow-go/pkg/remote/server"
 	"google.golang.org/grpc"
@@ -10,7 +11,11 @@ import (
 
 func main() {
 	grpcServer := grpc.NewServer()
-	pb.RegisterRequestServer(grpcServer, server.NewRequestService())
+	//注册handler
+	service := server.NewRequestService()
+	service.RegisterHandler(center.NewSwitcherHandler())
+
+	pb.RegisterRequestServer(grpcServer, service)
 	listen, err := net.Listen("tcp", ":9854")
 	if err != nil {
 		log.Fatal("Listen TCP err:", err)

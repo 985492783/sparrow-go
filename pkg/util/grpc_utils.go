@@ -15,12 +15,7 @@ type Construct func() integration.Request
 
 var structMap sync.Map
 
-func init() {
-	Registry(reflect.TypeOf(integration.SuccessRequest{}).String(), func() integration.Request {
-		return &integration.SuccessRequest{}
-	})
-}
-func Registry(t string, construct Construct) {
+func RegistryConstruct(t string, construct Construct) {
 	structMap.Store(t, construct)
 }
 func ConvertResponse(response integration.Response) (*pb.Payload, error) {
@@ -28,11 +23,7 @@ func ConvertResponse(response integration.Response) (*pb.Payload, error) {
 	if err != nil {
 		return nil, err
 	}
-	tt := reflect.TypeOf(response)
-	realType := tt.String()
-	if tt.Kind() == reflect.Ptr {
-		realType = tt.Elem().String()
-	}
+	realType := GetType(response)
 	meta := &pb.Metadata{
 		Type:    realType,
 		Headers: make(map[string]string, 4),
@@ -53,11 +44,7 @@ func ConvertRequest(request integration.Request) (*pb.Payload, error) {
 	if err != nil {
 		return nil, err
 	}
-	tt := reflect.TypeOf(request)
-	realType := tt.String()
-	if tt.Kind() == reflect.Ptr {
-		realType = tt.Elem().String()
-	}
+	realType := GetType(request)
 	meta := &pb.Metadata{Type: realType}
 	payload := &pb.Payload{
 		Metadata: meta,
@@ -80,4 +67,12 @@ func ParseRequest(payload *pb.Payload) (integration.Request, error) {
 		return obj, nil
 	}
 	return nil, fmt.Errorf("not found struct type: %s", t)
+}
+
+func GetType(request interface{}) string {
+	tt := reflect.TypeOf(request)
+	if tt.Kind() == reflect.Ptr {
+		return tt.Elem().String()
+	}
+	return tt.String()
 }
