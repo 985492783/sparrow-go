@@ -18,16 +18,17 @@ config.toml中开启自选功能，目前有三种：
 
 ## 数据面
 
-| 支持计划          | v1.0 | v1.1 | ... |
-|---------------|------|------|-----|
-| LocalFile     | [x]  |      |     |
-| ConfigCenter  |      | [x]  |     |
-| k8s ConfigMap |      |      |     |
+| 支持计划          | v1.0               | v1.1               | ...                  |
+|---------------|--------------------|--------------------|----------------------|
+| LocalFile     | :white_check_mark: |                    |                      |
+| ConfigCenter  |                    | :white_check_mark: |                      |
+| k8s ConfigMap |                    |                    | :white_large_square: |
 
 ## 客户端
 
-Java-SDK： 
+Java-SDK：
+
 * sparrow-client
 * sparrow-spring-boot-starter
-  * sparrow-switcher-spring-boot-starter
-  * sparrow-logger-spring-boot-starter
+    * sparrow-switcher-spring-boot-starter
+    * sparrow-logger-spring-boot-starter
