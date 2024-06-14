@@ -1,14 +1,27 @@
 package center
 
 import (
-	"fmt"
 	"github.com/985492783/sparrow-go/integration"
 	"github.com/985492783/sparrow-go/pkg/remote/server"
 	"github.com/985492783/sparrow-go/pkg/util"
 )
 
+const (
+	REGISTRY = "registry"
+)
+
 type SwitcherRequest struct {
-	Name string
+	Name      string
+	Kind      string
+	AppName   string `validate:"required"`
+	Ip        string `json:"ip"`
+	ClassName string `json:"className"`
+	SwitchMap map[string]SwitcherItem
+}
+
+type SwitcherItem struct {
+	Type  string `json:"type"`
+	Value any    `json:"value"`
 }
 
 type SwitcherResponse struct {
@@ -23,18 +36,7 @@ func (c *SwitcherResponse) Code() int {
 type SwitcherHandler struct {
 }
 
-func NewSwitcherHandler() server.RequestHandler {
-	return &SwitcherHandler{}
-}
-
-func (s *SwitcherHandler) Handler(payload integration.Request) integration.Response {
-	request := payload.(*SwitcherRequest)
-	fmt.Printf("switcher handler, %v\n", request)
-	return &SwitcherResponse{
-		Resp:       "success " + request.Name,
-		statusCode: 200,
-	}
-}
+var _ server.RequestHandler = (*SwitcherHandler)(nil)
 
 func (s *SwitcherHandler) GetType() (string, util.Construct) {
 	return util.GetType(SwitcherRequest{}), func() integration.Request {
@@ -42,4 +44,22 @@ func (s *SwitcherHandler) GetType() (string, util.Construct) {
 	}
 }
 
-var _ server.RequestHandler = (*SwitcherHandler)(nil)
+func NewSwitcherHandler() server.RequestHandler {
+	return &SwitcherHandler{}
+}
+
+func (s *SwitcherHandler) Handler(payload integration.Request) integration.Response {
+	request := payload.(*SwitcherRequest)
+	switch request.Kind {
+	case REGISTRY:
+		return registerHandler(request)
+	}
+	return &SwitcherResponse{
+		Resp:       "Not Found " + request.Kind,
+		statusCode: 404,
+	}
+}
+
+func registerHandler(request *SwitcherRequest) *SwitcherResponse {
+	return nil
+}
