@@ -1,25 +1,54 @@
 package main
 
 import (
-	"github.com/985492783/sparrow-go/pkg/center"
-	"github.com/985492783/sparrow-go/pkg/remote/pb"
-	"github.com/985492783/sparrow-go/pkg/remote/server"
-	"google.golang.org/grpc"
+	"context"
+	"flag"
+	"github.com/985492783/sparrow-go/cmd/console"
+	"github.com/985492783/sparrow-go/cmd/switcher"
+	"github.com/985492783/sparrow-go/pkg/config"
 	"log"
-	"net"
+	"sync"
 )
 
 func main() {
-	grpcServer := grpc.NewServer()
-	//注册handler
-	service := server.NewRequestService()
-	service.RegisterHandler(center.NewSwitcherHandler())
-
-	pb.RegisterRequestServer(grpcServer, service)
-	listen, err := net.Listen("tcp", ":9854")
+	configPath := flag.String("config", "config.toml", "path to sparrow config file")
+	flag.Parse()
+	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
-		log.Fatal("Listen TCP err:", err)
+		log.Fatalf("Error loading sparrow config: %v", err)
 	}
-	//最后通过grpcServer.Serve(listen) 在一个监听端口上提供gRPC服务
-	log.Fatal(grpcServer.Serve(listen))
+	runServer(cfg)
+}
+
+func runServer(cfg *config.SparrowConfig) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var wg sync.WaitGroup
+
+	if cfg.SwitcherConfig.Enabled {
+		wg.Add(1)
+		go func() {
+			switcherS := switcher.NewSwitcherServer(ctx, &wg, cfg.SwitcherConfig)
+			err := switcherS.Start()
+			if err != nil {
+				log.Printf("Error starting switcher: %v\n", err)
+				cancel()
+			}
+		}()
+	}
+
+	if cfg.ConsoleConfig.Enabled {
+		wg.Add(1)
+		go func() {
+			consoleS := console.NewConsoleServer(ctx, &wg, cfg.ConsoleConfig)
+			err := consoleS.Start()
+			if err != nil {
+				log.Printf("Error starting console: %v\n", err)
+				cancel()
+			}
+		}()
+	}
+	log.Println("server started")
+	wg.Wait()
+	log.Println("Shutting down...")
 }

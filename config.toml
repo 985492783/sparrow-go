@@ -1,0 +1,8 @@
+
+[SwitcherConfig]
+enabled=true
+addr=":9854"
+
+[ConsoleConfig]
+enabled=true
+addr=":9800"
