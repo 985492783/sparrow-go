@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/985492783/sparrow-go/integration"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
-	"github.com/985492783/sparrow-go/pkg/util"
+	"github.com/985492783/sparrow-go/pkg/utils"
 )
 
 type RequestHandler interface {
 	Handler(request integration.Request) integration.Response
 
-	GetType() (string, util.Construct)
+	GetType() (string, utils.Construct)
 }
 
 type RequestService struct {
@@ -29,22 +29,22 @@ func NewRequestService() *RequestService {
 
 func (service *RequestService) RegisterHandler(handler RequestHandler) {
 	name, construct := handler.GetType()
-	util.RegistryConstruct(name, construct)
+	utils.RegistryConstruct(name, construct)
 	service.handlers[name] = handler
 }
 func (service *RequestService) Request(_ context.Context, payload *pb.Payload) (*pb.Payload, error) {
-	request, err := util.ParseRequest(payload)
+	request, err := utils.ParseRequest(payload)
 	if err != nil {
 		return nil, err
 	}
-	realType := util.GetType(request)
+	realType := utils.GetType(request)
 	handler, ok := service.handlers[realType]
 	if !ok {
 		return nil, fmt.Errorf("no handler for type %s", realType)
 	}
 	resp := handler.Handler(request)
 
-	response, err := util.ConvertResponse(resp)
+	response, err := utils.ConvertResponse(resp)
 	if err != nil {
 		return nil, err
 	}

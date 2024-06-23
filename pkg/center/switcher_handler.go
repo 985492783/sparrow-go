@@ -1,9 +1,10 @@
 package center
 
 import (
+	"fmt"
 	"github.com/985492783/sparrow-go/integration"
 	"github.com/985492783/sparrow-go/pkg/remote/server"
-	"github.com/985492783/sparrow-go/pkg/util"
+	"github.com/985492783/sparrow-go/pkg/utils"
 )
 
 const (
@@ -11,17 +12,10 @@ const (
 )
 
 type SwitcherRequest struct {
-	Name      string
-	Kind      string
-	AppName   string `validate:"required"`
-	Ip        string `json:"ip"`
-	ClassName string `json:"className"`
-	SwitchMap map[string]SwitcherItem
-}
-
-type SwitcherItem struct {
-	Type  string `json:"type"`
-	Value any    `json:"value"`
+	Kind     string
+	AppName  string                              `validate:"required"`
+	Ip       string                              `json:"ip"`
+	ClassMap map[string]map[string]*SwitcherItem `json:"classMap"`
 }
 
 type SwitcherResponse struct {
@@ -38,8 +32,8 @@ type SwitcherHandler struct {
 
 var _ server.RequestHandler = (*SwitcherHandler)(nil)
 
-func (s *SwitcherHandler) GetType() (string, util.Construct) {
-	return util.GetType(SwitcherRequest{}), func() integration.Request {
+func (s *SwitcherHandler) GetType() (string, utils.Construct) {
+	return utils.GetType(SwitcherRequest{}), func() integration.Request {
 		return &SwitcherRequest{}
 	}
 }
@@ -61,5 +55,6 @@ func (s *SwitcherHandler) Handler(payload integration.Request) integration.Respo
 }
 
 func registerHandler(request *SwitcherRequest) *SwitcherResponse {
-	return nil
+	fmt.Println("registry")
+	return &SwitcherResponse{statusCode: 200}
 }

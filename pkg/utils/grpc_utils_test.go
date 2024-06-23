@@ -1,4 +1,4 @@
-package util
+package utils
 
 import (
 	"fmt"
@@ -39,7 +39,7 @@ func TestRequest(t *testing.T) {
 		return
 	}
 	fmt.Println(request)
-	RegistryConstruct("util.SimpleRequest", func() integration.Request {
+	RegistryConstruct("utils.SimpleRequest", func() integration.Request {
 		return &SimpleRequest{}
 	})
 	parseRequest, err := ParseRequest(request)

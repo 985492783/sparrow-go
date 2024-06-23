@@ -2,6 +2,7 @@ package switcher
 
 import (
 	"context"
+	"fmt"
 	"github.com/985492783/sparrow-go/pkg/center"
 	"github.com/985492783/sparrow-go/pkg/config"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
@@ -10,6 +11,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 type SwitcherServer struct {
@@ -34,6 +36,8 @@ func (switcher *SwitcherServer) Start() error {
 	service := server.NewRequestService()
 	service.RegisterHandler(center.NewSwitcherHandler())
 
+	stream := server.NewRequestStream()
+
 	go func() {
 		<-switcher.ctx.Done() // 等待停止信号
 		grpcServer.GracefulStop()
@@ -41,6 +45,15 @@ func (switcher *SwitcherServer) Start() error {
 	}()
 
 	pb.RegisterRequestServer(grpcServer, service)
+	pb.RegisterBiRequestStreamServer(grpcServer, stream)
+	go func() {
+		tick := time.Tick(time.Second * 5)
+		for {
+			<-tick
+			log.Println("Switcher server tick")
+			fmt.Println(stream.GetStreams())
+		}
+	}()
 	listen, err := net.Listen("tcp", switcher.cfg.Addr)
 	if err != nil {
 		return err

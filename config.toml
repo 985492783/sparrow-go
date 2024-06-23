@@ -2,7 +2,9 @@
 [SwitcherConfig]
 enabled=true
 addr=":9854"
+password=""
 
 [ConsoleConfig]
 enabled=true
 addr=":9800"
+password=""

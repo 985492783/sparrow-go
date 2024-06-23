@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/985492783/sparrow-go/pkg/center"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
-	"github.com/985492783/sparrow-go/pkg/util"
+	"github.com/985492783/sparrow-go/pkg/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -32,8 +32,8 @@ func TestGrpcClient(t *testing.T) {
 	client := pb.NewRequestClient(conn)
 
 	// 通过接口定义的方法就可以调用服务端对应gRPC服务提供的方法
-	req := center.SwitcherRequest{Name: "com.qiyue.test"}
-	request, err := util.ConvertRequest(req)
+	req := center.SwitcherRequest{Kind: "registry", AppName: "Payment"}
+	request, err := utils.ConvertRequest(req)
 	if err != nil {
 		return
 	}
