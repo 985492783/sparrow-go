@@ -3,10 +3,10 @@ package switcher
 import (
 	"context"
 	"fmt"
-	"github.com/985492783/sparrow-go/pkg/center"
 	"github.com/985492783/sparrow-go/pkg/config"
+	"github.com/985492783/sparrow-go/pkg/handler"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
-	"github.com/985492783/sparrow-go/pkg/remote/server"
+	server2 "github.com/985492783/sparrow-go/pkg/server"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -33,11 +33,10 @@ func (switcher *SwitcherServer) Start() error {
 
 	grpcServer := grpc.NewServer()
 	//注册handler
-	service := server.NewRequestService()
-	service.RegisterHandler(center.NewSwitcherHandler())
+	service := server2.NewRequestService()
+	stream := server2.NewRequestStream()
 
-	stream := server.NewRequestStream()
-
+	service.RegisterHandler(handler.NewSwitcherHandler(stream))
 	go func() {
 		<-switcher.ctx.Done() // 等待停止信号
 		grpcServer.GracefulStop()

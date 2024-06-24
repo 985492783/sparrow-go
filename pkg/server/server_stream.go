@@ -59,6 +59,7 @@ func (server *RequestServerStream) RequestBiStream(stream pb.BiRequestStream_Req
 					continue
 				}
 				registryRequest := request.(*RegistryRequest)
+				clientId = registryRequest.ClientId
 				server.addStream(registryRequest.ClientId, stream)
 				open = true
 			}

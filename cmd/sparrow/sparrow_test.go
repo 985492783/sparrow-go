@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/985492783/sparrow-go/pkg/center"
+	"github.com/985492783/sparrow-go/pkg/handler"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
 	"github.com/985492783/sparrow-go/pkg/utils"
 	"google.golang.org/grpc"
@@ -32,7 +32,7 @@ func TestGrpcClient(t *testing.T) {
 	client := pb.NewRequestClient(conn)
 
 	// 通过接口定义的方法就可以调用服务端对应gRPC服务提供的方法
-	req := center.SwitcherRequest{Kind: "registry", AppName: "Payment"}
+	req := handler.SwitcherRequest{Kind: "registry", AppName: "Payment"}
 	request, err := utils.ConvertRequest(req)
 	if err != nil {
 		return

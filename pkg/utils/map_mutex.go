@@ -43,3 +43,19 @@ func (m *MapMutex[K, V]) Put(k K, v V) {
 	defer m.lock.Unlock()
 	m.mmap[k] = v
 }
+
+func (m *MapMutex[K, V]) Remove(k K) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	delete(m.mmap, k)
+}
+
+func (m *MapMutex[K, V]) Run(fun func()) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	fun()
+}
+
+func (m *MapMutex[K, V]) IsEmpty() bool {
+	return len(m.mmap) == 0
+}

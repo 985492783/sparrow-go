@@ -33,6 +33,7 @@ func (service *RequestService) RegisterHandler(handler RequestHandler) {
 	service.handlers[name] = handler
 }
 func (service *RequestService) Request(_ context.Context, payload *pb.Payload) (*pb.Payload, error) {
+	//TODO 鉴权 clientId
 	request, err := utils.ParseRequest(payload)
 	if err != nil {
 		return nil, err
