@@ -1,7 +1,6 @@
 package core
 
 import (
-	"github.com/985492783/sparrow-go/pkg/utils"
 	"sync"
 )
 
@@ -20,82 +19,114 @@ type fieldItem struct {
 	*SwitcherItem
 }
 
-type fieldMap *utils.MapMutex[string, *fieldItem]
-type classNameMap *utils.MapMutex[string, fieldMap]
-type appNameMap *utils.MapMutex[string, classNameMap]
+type fieldMap map[string]*fieldItem
+type classNameMap map[string]fieldMap
+type appNameMap map[string]classNameMap
 
 // 1 app -> n class -> m field -> o ip
 
 type NameSpace struct {
-	dataMap *utils.MapMutex[string, appNameMap]
+	mu      sync.RWMutex
+	dataMap map[string]appNameMap
 }
+
 type ClientElement struct {
-	fields     fieldMap
-	classes    classNameMap
-	apps       appNameMap
+	field      string
+	class      string
+	appName    string
 	nameSpaces *NameSpace
 }
 type ClientIp struct {
 	ip       string
-	mu       sync.Mutex
 	elements []*ClientElement
 }
 
-var nameSpaceMap *utils.MapMutex[string, *NameSpace]
-var clientMap *utils.MapMutex[string, *ClientIp]
+var nameSpaceMap sync.Map
+var clientMap sync.Map
 
 func Register(clientId, namespace, appName, ip string, registry map[string]map[string]*SwitcherItem) {
-	clientIp := clientMap.ComputeIfAbsent(clientId, func() *ClientIp {
-		return &ClientIp{
-			ip:       ip,
-			elements: make([]*ClientElement, 16),
-		}
-	})
-	clientIp.mu.Lock()
-	defer clientIp.mu.Unlock()
 
-	nameSpace := nameSpaceMap.ComputeIfAbsent(namespace, func() *NameSpace {
-		return &NameSpace{
-			dataMap: utils.NewMapMutex[string, appNameMap](),
-		}
+	_, _ = clientMap.LoadOrStore(clientId, &ClientIp{
+		ip: ip,
 	})
 
-	app := nameSpace.dataMap.ComputeIfAbsent(appName, func() appNameMap {
-		return utils.NewMapMutex[string, classNameMap]()
+	ns, _ := nameSpaceMap.LoadOrStore(namespace, &NameSpace{
+		dataMap: make(map[string]appNameMap),
 	})
 
-	appMap := (*utils.MapMutex[string, classNameMap])(app)
+	nameSpace := ns.(*NameSpace)
+	nameSpace.mu.Lock()
+	defer nameSpace.mu.Unlock()
+
+	app := putIfAbsent(nameSpace.dataMap, appName, func() appNameMap {
+		return make(appNameMap)
+	})
+
+	appMap := (map[string]classNameMap)(app)
 	for clazz, fieldM := range registry {
-		cls := appMap.ComputeIfAbsent(clazz, func() classNameMap {
-			return utils.NewMapMutex[string, fieldMap]()
+		cls := putIfAbsent(appMap, clazz, func() classNameMap {
+			return make(classNameMap)
 		})
-		classMap := (*utils.MapMutex[string, fieldMap])(cls)
+		classMap := (map[string]fieldMap)(cls)
 		for fileName, field := range fieldM {
-			fm := classMap.ComputeIfAbsent(fileName, func() fieldMap {
-				return utils.NewMapMutex[string, *fieldItem]()
+			fm := putIfAbsent(classMap, fileName, func() fieldMap {
+				return make(fieldMap)
 			})
-			(*utils.MapMutex[string, *fieldItem])(fm).Put(ip, convertToFieldItem(appName, clazz, ip, field))
-
-			//load in clientIp
-			clientIp.elements = append(clientIp.elements, &ClientElement{
-				fields:     fm,
-				classes:    classMap,
-				apps:       app,
-				nameSpaces: nameSpace,
-			})
-
+			(map[string]*fieldItem)(fm)[ip] = convertToFieldItem(appName, clazz, ip, field)
 		}
 	}
 }
 
 func DeRegister(clientId string) {
-	clientIp, ok := clientMap.Get(clientId)
+	if client, ok := clientMap.Load(clientId); ok {
+		clientIp := client.(*ClientIp)
+		for _, element := range clientIp.elements {
+			deRegister(clientIp.ip, element)
+		}
+	}
+}
+
+func deRegister(ip string, element *ClientElement) {
+	element.nameSpaces.mu.Lock()
+	defer element.nameSpaces.mu.Unlock()
+
+	app, ok := element.nameSpaces.dataMap[element.appName]
 	if !ok {
 		return
 	}
-	clientIp.mu.Lock()
-	defer clientIp.mu.Unlock()
+	appMap := (map[string]classNameMap)(app)
 
+	cls, ok := appMap[element.class]
+	if !ok {
+		return
+	}
+
+	classMap := (map[string]fieldMap)(cls)
+	fm, ok := classMap[element.field]
+	if !ok {
+		return
+	}
+
+	delete(fm, ip)
+	if len(fm) == 0 {
+		delete(classMap, element.field)
+		if len(classMap) == 0 {
+			delete(appMap, element.class)
+			if len(appMap) == 0 {
+				delete(element.nameSpaces.dataMap, element.appName)
+			}
+		}
+	}
+}
+
+func putIfAbsent[T any](mp map[string]T, key string, fn func() T) T {
+	app, ok := mp[key]
+	if !ok {
+		t := fn()
+		mp[key] = t
+		return t
+	}
+	return app
 }
 
 func convertToFieldItem(appName, className, ip string, item *SwitcherItem) *fieldItem {
