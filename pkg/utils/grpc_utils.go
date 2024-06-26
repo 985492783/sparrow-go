@@ -64,9 +64,27 @@ func ParseRequest(payload *pb.Payload) (integration.Request, error) {
 		if err != nil {
 			return nil, err
 		}
+		obj.Headers(payload.Metadata.Headers)
 		return obj, nil
 	}
 	return nil, fmt.Errorf("not found struct type: %s", t)
+}
+
+func ErrorResponse(code int, error error) *pb.Payload {
+	meta := &pb.Metadata{
+		Type: "error",
+		Headers: map[string]string{
+			"": "",
+		},
+	}
+	payload := &pb.Payload{
+		Metadata: meta,
+		Body: &anypb.Any{
+			TypeUrl: "type.googleapis.com/json",
+			Value:   make([]byte, 0),
+		},
+	}
+	return payload
 }
 
 func GetType(request interface{}) string {

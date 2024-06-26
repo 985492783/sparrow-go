@@ -32,6 +32,15 @@ type SwitcherHandler struct {
 	stream *server2.RequestServerStream
 }
 
+func (s *SwitcherHandler) GetPermit(payload integration.Request) string {
+	request := payload.(*SwitcherRequest)
+	switch request.Kind {
+	case REGISTRY:
+		return utils.AuthSwitcherRegister
+	}
+	return ""
+}
+
 var _ server2.RequestHandler = (*SwitcherHandler)(nil)
 
 func (s *SwitcherHandler) GetType() (string, utils.Construct) {
@@ -62,6 +71,7 @@ func (s *SwitcherHandler) registerHandler(request *SwitcherRequest) *SwitcherRes
 	if _, ok := s.stream.GetStreams()[request.ClientId]; !ok {
 		return &SwitcherResponse{statusCode: 301, Resp: "clientId Not exist"}
 	}
-	core.Register(request.ClientId, request.NameSpace, request.AppName, request.Ip, request.ClassMap)
+	// TODO 从底层获取持久化配置
+	go core.Register(request.ClientId, request.NameSpace, request.AppName, request.Ip, request.ClassMap)
 	return &SwitcherResponse{statusCode: 200}
 }

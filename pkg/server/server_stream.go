@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/985492783/sparrow-go/integration"
+	"github.com/985492783/sparrow-go/pkg/core"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
 	"github.com/985492783/sparrow-go/pkg/utils"
 	"io"
@@ -9,8 +10,8 @@ import (
 )
 
 type RegistryRequest struct {
-	ClientId string `validate:"clientId"`
-	Ip       string `json:"ip"`
+	Ip string `json:"ip"`
+	integration.Metadata
 }
 
 type RequestServerStream struct {
@@ -32,6 +33,7 @@ func NewRequestStream() *RequestServerStream {
 	}
 	return stream
 }
+
 func (server *RequestServerStream) RequestBiStream(stream pb.BiRequestStream_RequestBiStreamServer) error {
 	ch := make(chan interface{})
 	go func() {
@@ -60,11 +62,11 @@ func (server *RequestServerStream) RequestBiStream(stream pb.BiRequestStream_Req
 				}
 				registryRequest := request.(*RegistryRequest)
 				clientId = registryRequest.ClientId
-				server.addStream(registryRequest.ClientId, stream)
+				server.addStream(clientId, stream)
 				open = true
 			}
-
 		}
+		core.DeRegister(clientId)
 	}()
 
 	<-ch

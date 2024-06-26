@@ -39,6 +39,7 @@ type ClientElement struct {
 type ClientIp struct {
 	ip       string
 	elements []*ClientElement
+	mu       sync.Mutex
 }
 
 var nameSpaceMap sync.Map
@@ -46,10 +47,15 @@ var clientMap sync.Map
 
 func Register(clientId, namespace, appName, ip string, registry map[string]map[string]*SwitcherItem) {
 
-	_, _ = clientMap.LoadOrStore(clientId, &ClientIp{
+	client, _ := clientMap.LoadOrStore(clientId, &ClientIp{
 		ip: ip,
 	})
 
+	client.(*ClientIp).mu.Lock()
+	defer client.(*ClientIp).mu.Unlock()
+
+	// 防止被DeRegister删除
+	clientMap.LoadOrStore(clientId, client)
 	ns, _ := nameSpaceMap.LoadOrStore(namespace, &NameSpace{
 		dataMap: make(map[string]appNameMap),
 	})
@@ -80,9 +86,14 @@ func Register(clientId, namespace, appName, ip string, registry map[string]map[s
 func DeRegister(clientId string) {
 	if client, ok := clientMap.Load(clientId); ok {
 		clientIp := client.(*ClientIp)
+		clientIp.mu.Lock()
+		defer clientIp.mu.Unlock()
+
 		for _, element := range clientIp.elements {
 			deRegister(clientIp.ip, element)
 		}
+		// 移除clientMap
+		clientMap.Delete(clientId)
 	}
 }
 
@@ -136,4 +147,21 @@ func convertToFieldItem(appName, className, ip string, item *SwitcherItem) *fiel
 		Ip:           ip,
 		SwitcherItem: item,
 	}
+}
+
+func GetNs() []string {
+	ns := make([]string, 0)
+	nameSpaceMap.Range(func(key, value any) bool {
+		ns = append(ns, key.(string))
+		return true
+	})
+	return ns
+}
+
+func GetJSON(namespace string) any {
+	ns, ok := nameSpaceMap.Load(namespace)
+	if !ok {
+		return ""
+	}
+	return ns.(*NameSpace).dataMap
 }

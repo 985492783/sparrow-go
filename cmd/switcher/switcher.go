@@ -15,12 +15,12 @@ import (
 )
 
 type SwitcherServer struct {
-	cfg *config.SwitcherConfig
+	cfg *config.SparrowConfig
 	wg  *sync.WaitGroup
 	ctx context.Context
 }
 
-func NewSwitcherServer(ctx context.Context, wg *sync.WaitGroup, cfg *config.SwitcherConfig) *SwitcherServer {
+func NewSwitcherServer(ctx context.Context, wg *sync.WaitGroup, cfg *config.SparrowConfig) *SwitcherServer {
 	return &SwitcherServer{
 		ctx: ctx,
 		wg:  wg,
@@ -33,7 +33,7 @@ func (switcher *SwitcherServer) Start() error {
 
 	grpcServer := grpc.NewServer()
 	//注册handler
-	service := server2.NewRequestService()
+	service := server2.NewRequestService(switcher.cfg)
 	stream := server2.NewRequestStream()
 
 	service.RegisterHandler(handler.NewSwitcherHandler(stream))
@@ -53,11 +53,11 @@ func (switcher *SwitcherServer) Start() error {
 			fmt.Println(stream.GetStreams())
 		}
 	}()
-	listen, err := net.Listen("tcp", switcher.cfg.Addr)
+	listen, err := net.Listen("tcp", switcher.cfg.SwitcherConfig.Addr)
 	if err != nil {
 		return err
 	}
-	log.Printf("Switcher server listening on %s\n", switcher.cfg.Addr)
+	log.Printf("Switcher server listening on %s\n", switcher.cfg.SwitcherConfig.Addr)
 	//最后通过grpcServer.Serve(listen) 在一个监听端口上提供gRPC服务
 	return grpcServer.Serve(listen)
 }

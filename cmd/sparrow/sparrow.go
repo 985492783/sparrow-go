@@ -28,7 +28,7 @@ func runServer(cfg *config.SparrowConfig) {
 	if cfg.SwitcherConfig.Enabled {
 		wg.Add(1)
 		go func() {
-			switcherS := switcher.NewSwitcherServer(ctx, &wg, cfg.SwitcherConfig)
+			switcherS := switcher.NewSwitcherServer(ctx, &wg, cfg)
 			err := switcherS.Start()
 			if err != nil {
 				log.Printf("Error starting switcher: %v\n", err)
@@ -40,7 +40,7 @@ func runServer(cfg *config.SparrowConfig) {
 	if cfg.ConsoleConfig.Enabled {
 		wg.Add(1)
 		go func() {
-			consoleS := console.NewConsoleServer(ctx, &wg, cfg.ConsoleConfig)
+			consoleS := console.NewConsoleServer(ctx, &wg, cfg)
 			err := consoleS.Start()
 			if err != nil {
 				log.Printf("Error starting console: %v\n", err)
