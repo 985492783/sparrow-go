@@ -64,10 +64,13 @@ func (db *FileDB) updateData(data *Properties) error {
 func newFileDB(config *dBConfig) (*FileDB, error) {
 	path := strings.ReplaceAll(config.path, "$HOME", os.Getenv("HOME"))
 	tmpDir := filepath.Join(path, ".sparrow")
-
+	if err := os.RemoveAll(tmpDir); err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(tmpDir, 0755); err != nil {
 		return nil, err
 	}
+
 	return &FileDB{
 		baseDir: path,
 		tmpDir:  tmpDir,

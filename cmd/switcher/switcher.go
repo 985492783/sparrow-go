@@ -2,7 +2,6 @@ package switcher
 
 import (
 	"context"
-	"fmt"
 	"github.com/985492783/sparrow-go/pkg/config"
 	"github.com/985492783/sparrow-go/pkg/core"
 	"github.com/985492783/sparrow-go/pkg/db"
@@ -13,7 +12,6 @@ import (
 	"log"
 	"net"
 	"sync"
-	"time"
 )
 
 type SwitcherServer struct {
@@ -47,14 +45,7 @@ func (switcher *SwitcherServer) Start(manager *core.SwitcherManager, database *d
 
 	pb.RegisterRequestServer(grpcServer, service)
 	pb.RegisterBiRequestStreamServer(grpcServer, stream)
-	go func() {
-		tick := time.Tick(time.Second * 5)
-		for {
-			<-tick
-			log.Println("Switcher server tick")
-			fmt.Println(stream.GetStreams())
-		}
-	}()
+
 	listen, err := net.Listen("tcp", switcher.cfg.SwitcherConfig.Addr)
 	if err != nil {
 		return err

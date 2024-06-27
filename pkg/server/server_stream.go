@@ -6,6 +6,7 @@ import (
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
 	"github.com/985492783/sparrow-go/pkg/utils"
 	"io"
+	"log"
 	"sync"
 )
 
@@ -68,6 +69,7 @@ func (server *RequestServerStream) RequestBiStream(stream pb.BiRequestStream_Req
 				open = true
 			}
 		}
+		log.Println("deregister")
 		server.manager.DeRegister(clientId)
 	}()
 

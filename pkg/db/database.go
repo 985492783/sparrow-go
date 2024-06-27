@@ -55,6 +55,7 @@ func NewDatabase(config *config.SparrowConfig) (*Database, error) {
 	}
 	return &Database{
 		datasource: datasource,
+		data:       make(map[string]*Properties),
 	}, nil
 }
 
