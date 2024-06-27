@@ -8,18 +8,20 @@ import (
 )
 
 type SwitcherController struct {
-	config *config.SparrowConfig
+	config  *config.SparrowConfig
+	manager *core.SwitcherManager
 }
 
-func NewSwitcherController(config *config.SparrowConfig) *SwitcherController {
+func NewSwitcherController(config *config.SparrowConfig, manager *core.SwitcherManager) *SwitcherController {
 	return &SwitcherController{
-		config: config,
+		config:  config,
+		manager: manager,
 	}
 }
 func (controller *SwitcherController) QueryNameSpace(c *gin.Context) {
-	c.JSON(200, middleware.NewResponseSuccess(core.GetNs()))
+	c.JSON(200, middleware.NewResponseSuccess(controller.manager.GetNs()))
 }
 
 func (controller *SwitcherController) QueryClass(c *gin.Context) {
-	c.JSON(200, middleware.NewResponseSuccess(core.GetJSON(c.Query("ns"))))
+	c.JSON(200, middleware.NewResponseSuccess(controller.manager.GetJSON(c.Query("ns"))))
 }

@@ -14,7 +14,7 @@ type Properties struct {
 	datasource DataSource
 }
 
-func NewProperties(ns, sparrow, fileName string) *Properties {
+func newProperties(ns, sparrow, fileName string) *Properties {
 	return &Properties{
 		data:     make(map[string]any),
 		ns:       ns,
@@ -55,24 +55,35 @@ func (p *Properties) SetAll(mapping map[string]any) {
 	maps.Copy(p.data, mapping)
 }
 
-func (p *Properties) Get(key string) any {
+func (p *Properties) Get(key string) (any, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	return p.data[key]
+	d, ok := p.data[key]
+	return d, ok
 }
 
-func (p *Properties) GetString(key string) string {
-	return p.Get(key).(string)
+func (p *Properties) GetString(key string) (*string, bool) {
+	if data, ok := p.Get(key); ok {
+		return data.(*string), true
+	}
+	return nil, false
 }
-func (p *Properties) GetBool(key string) bool {
-	return p.Get(key).(bool)
+func (p *Properties) GetBool(key string) (*bool, bool) {
+	if data, ok := p.Get(key); ok {
+		return data.(*bool), true
+	}
+	return nil, false
 }
-func (p *Properties) GetInt(key string) int {
-	return p.Get(key).(int)
+func (p *Properties) GetInt(key string) (*int, bool) {
+	if data, ok := p.Get(key); ok {
+		return data.(*int), true
+	}
+	return nil, false
 }
-func (p *Properties) GetInt32(key string) int32 {
-	return p.Get(key).(int32)
-}
-func (p *Properties) GetInt64(key string) int64 {
-	return p.Get(key).(int64)
+func (p *Properties) GetInt64(key string) (*int64, bool) {
+	if data, ok := p.Get(key); ok {
+		return data.(*int64), true
+	}
+	return nil, false
+
 }

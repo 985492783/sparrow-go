@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/985492783/sparrow-go/pkg/config"
+	"github.com/985492783/sparrow-go/pkg/core"
+	"github.com/985492783/sparrow-go/pkg/db"
 	"github.com/985492783/sparrow-go/pkg/handler"
 	"github.com/985492783/sparrow-go/pkg/remote/pb"
 	server2 "github.com/985492783/sparrow-go/pkg/server"
@@ -28,15 +30,15 @@ func NewSwitcherServer(ctx context.Context, wg *sync.WaitGroup, cfg *config.Spar
 	}
 }
 
-func (switcher *SwitcherServer) Start() error {
+func (switcher *SwitcherServer) Start(manager *core.SwitcherManager, database *db.Database) error {
 	defer switcher.wg.Done()
 
 	grpcServer := grpc.NewServer()
 	//注册handler
 	service := server2.NewRequestService(switcher.cfg)
-	stream := server2.NewRequestStream()
+	stream := server2.NewRequestStream(manager)
 
-	service.RegisterHandler(handler.NewSwitcherHandler(stream))
+	service.RegisterHandler(handler.NewSwitcherHandler(database, manager, stream))
 	go func() {
 		<-switcher.ctx.Done() // 等待停止信号
 		grpcServer.GracefulStop()

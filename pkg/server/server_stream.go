@@ -18,17 +18,19 @@ type RequestServerStream struct {
 	pb.UnsafeBiRequestStreamServer
 	streamMap map[string]pb.BiRequestStream_RequestBiStreamServer
 	lock      sync.RWMutex
+	manager   *core.SwitcherManager
 }
 
 var stream *RequestServerStream
 
-func NewRequestStream() *RequestServerStream {
+func NewRequestStream(manager *core.SwitcherManager) *RequestServerStream {
 	if stream == nil {
 		utils.RegistryConstruct(utils.GetType(RegistryRequest{}), func() integration.Request {
 			return &RegistryRequest{}
 		})
 		stream = &RequestServerStream{
 			streamMap: make(map[string]pb.BiRequestStream_RequestBiStreamServer),
+			manager:   manager,
 		}
 	}
 	return stream
@@ -66,7 +68,7 @@ func (server *RequestServerStream) RequestBiStream(stream pb.BiRequestStream_Req
 				open = true
 			}
 		}
-		core.DeRegister(clientId)
+		server.manager.DeRegister(clientId)
 	}()
 
 	<-ch

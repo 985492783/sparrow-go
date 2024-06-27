@@ -3,6 +3,7 @@ package console
 import (
 	"context"
 	"github.com/985492783/sparrow-go/pkg/config"
+	"github.com/985492783/sparrow-go/pkg/core"
 	"github.com/985492783/sparrow-go/pkg/utils"
 	"github.com/985492783/sparrow-go/pkg/web/controllers"
 	"github.com/985492783/sparrow-go/pkg/web/middleware"
@@ -25,9 +26,9 @@ func NewConsoleServer(ctx context.Context, wg *sync.WaitGroup, cfg *config.Sparr
 		ctx: ctx,
 	}
 }
-func (server *ConsoleServer) Start() error {
+func (server *ConsoleServer) Start(manager *core.SwitcherManager) error {
 	defer server.wg.Done()
-	r := NewEngine(server.cfg)
+	r := NewEngine(server.cfg, manager)
 
 	svc := &http.Server{
 		Addr:    server.cfg.ConsoleConfig.Addr,
@@ -42,7 +43,7 @@ func (server *ConsoleServer) Start() error {
 	return svc.ListenAndServe()
 }
 
-func NewEngine(cfg *config.SparrowConfig) *gin.Engine {
+func NewEngine(cfg *config.SparrowConfig, manager *core.SwitcherManager) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 
@@ -53,7 +54,7 @@ func NewEngine(cfg *config.SparrowConfig) *gin.Engine {
 	{
 		switcherList := v1.Group("switcher")
 		switcherList.Use(middleware.Auth(utils.AuthSwitcherList, cfg))
-		switcherController := controllers.NewSwitcherController(cfg)
+		switcherController := controllers.NewSwitcherController(cfg, manager)
 		{
 			switcherList.GET("/ns", switcherController.QueryNameSpace)
 			switcherList.GET("/class", switcherController.QueryClass)

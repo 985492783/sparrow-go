@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/985492783/sparrow-go/integration"
 	"github.com/985492783/sparrow-go/pkg/core"
+	"github.com/985492783/sparrow-go/pkg/db"
 	server2 "github.com/985492783/sparrow-go/pkg/server"
 	"github.com/985492783/sparrow-go/pkg/utils"
 )
@@ -22,6 +23,7 @@ type SwitcherRequest struct {
 type SwitcherResponse struct {
 	Resp       string
 	statusCode int
+	ClassMap   map[string]map[string]*core.SwitcherItem
 }
 
 func (c *SwitcherResponse) Code() int {
@@ -29,7 +31,9 @@ func (c *SwitcherResponse) Code() int {
 }
 
 type SwitcherHandler struct {
-	stream *server2.RequestServerStream
+	stream          *server2.RequestServerStream
+	switcherManager *core.SwitcherManager
+	database        *db.Database
 }
 
 func (s *SwitcherHandler) GetPermit(payload integration.Request) string {
@@ -49,9 +53,11 @@ func (s *SwitcherHandler) GetType() (string, utils.Construct) {
 	}
 }
 
-func NewSwitcherHandler(stream *server2.RequestServerStream) server2.RequestHandler {
+func NewSwitcherHandler(database *db.Database, switcherManager *core.SwitcherManager, stream *server2.RequestServerStream) server2.RequestHandler {
 	return &SwitcherHandler{
-		stream: stream,
+		stream:          stream,
+		database:        database,
+		switcherManager: switcherManager,
 	}
 }
 
@@ -72,6 +78,26 @@ func (s *SwitcherHandler) registerHandler(request *SwitcherRequest) *SwitcherRes
 		return &SwitcherResponse{statusCode: 301, Resp: "clientId Not exist"}
 	}
 	// TODO 从底层获取持久化配置
-	go core.Register(request.ClientId, request.NameSpace, request.AppName, request.Ip, request.ClassMap)
-	return &SwitcherResponse{statusCode: 200}
+	classMap := request.ClassMap
+	mp := make(map[string]map[string]*core.SwitcherItem)
+
+	for class, fieldMap := range classMap {
+		properties := s.database.GetData(request.NameSpace, "switcher", request.AppName+"@@"+class)
+		for field, item := range fieldMap {
+			if fieldData, ok := properties.Get(field); ok && utils.IsTypeOf(fieldData, item.Type) {
+				item.Value = fieldData
+				clm, ok := mp[class]
+				if !ok {
+					clm = make(map[string]*core.SwitcherItem)
+					mp[class] = clm
+				}
+				clm[field] = item
+			}
+		}
+	}
+	go s.switcherManager.Register(request.ClientId, request.NameSpace, request.AppName, request.Ip, classMap)
+	return &SwitcherResponse{
+		statusCode: 200,
+		ClassMap:   mp,
+	}
 }

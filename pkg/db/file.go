@@ -19,7 +19,7 @@ type FileDB struct {
 func (db *FileDB) getData(ns, sparrow, fileName string) *Properties {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
-	property := NewProperties(ns, sparrow, fileName)
+	property := newProperties(ns, sparrow, fileName)
 
 	filePath := filepath.Join(db.baseDir, ns, sparrow, fileName)
 	con := config.New("default")

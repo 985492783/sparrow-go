@@ -6,6 +6,8 @@ import (
 	"github.com/985492783/sparrow-go/cmd/console"
 	"github.com/985492783/sparrow-go/cmd/switcher"
 	"github.com/985492783/sparrow-go/pkg/config"
+	"github.com/985492783/sparrow-go/pkg/core"
+	"github.com/985492783/sparrow-go/pkg/db"
 	"log"
 	"sync"
 )
@@ -21,6 +23,12 @@ func main() {
 }
 
 func runServer(cfg *config.SparrowConfig) {
+	database, err := db.NewDatabase(cfg)
+	switcherManager := core.NewSwitcherManager()
+	if err != nil {
+		log.Fatalf("Error initializing database: %v", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var wg sync.WaitGroup
@@ -29,7 +37,7 @@ func runServer(cfg *config.SparrowConfig) {
 		wg.Add(1)
 		go func() {
 			switcherS := switcher.NewSwitcherServer(ctx, &wg, cfg)
-			err := switcherS.Start()
+			err := switcherS.Start(switcherManager, database)
 			if err != nil {
 				log.Printf("Error starting switcher: %v\n", err)
 				cancel()
@@ -41,7 +49,7 @@ func runServer(cfg *config.SparrowConfig) {
 		wg.Add(1)
 		go func() {
 			consoleS := console.NewConsoleServer(ctx, &wg, cfg)
-			err := consoleS.Start()
+			err := consoleS.Start(switcherManager)
 			if err != nil {
 				log.Printf("Error starting console: %v\n", err)
 				cancel()

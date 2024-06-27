@@ -22,7 +22,11 @@ type fieldMap map[string]*fieldItem
 type classNameMap map[string]fieldMap
 type appNameMap map[string]classNameMap
 
-// 1 app -> n class -> m field -> o ip
+// SwitcherManager 1 app -> n class -> m field -> o ip
+type SwitcherManager struct {
+	nameSpaceMap sync.Map
+	clientMap    sync.Map
+}
 
 type NameSpace struct {
 	mu      sync.RWMutex
@@ -41,12 +45,13 @@ type ClientIp struct {
 	mu       sync.Mutex
 }
 
-var nameSpaceMap sync.Map
-var clientMap sync.Map
+func NewSwitcherManager() *SwitcherManager {
+	return &SwitcherManager{}
+}
 
-func Register(clientId, namespace, appName, ip string, registry map[string]map[string]*SwitcherItem) {
+func (manager *SwitcherManager) Register(clientId, namespace, appName, ip string, registry map[string]map[string]*SwitcherItem) {
 
-	client, _ := clientMap.LoadOrStore(clientId, &ClientIp{
+	client, _ := manager.clientMap.LoadOrStore(clientId, &ClientIp{
 		ip: ip,
 	})
 
@@ -54,8 +59,8 @@ func Register(clientId, namespace, appName, ip string, registry map[string]map[s
 	defer client.(*ClientIp).mu.Unlock()
 
 	// 防止被DeRegister删除
-	clientMap.LoadOrStore(clientId, client)
-	ns, _ := nameSpaceMap.LoadOrStore(namespace, &NameSpace{
+	manager.clientMap.LoadOrStore(clientId, client)
+	ns, _ := manager.nameSpaceMap.LoadOrStore(namespace, &NameSpace{
 		dataMap: make(map[string]appNameMap),
 	})
 
@@ -82,21 +87,21 @@ func Register(clientId, namespace, appName, ip string, registry map[string]map[s
 	}
 }
 
-func DeRegister(clientId string) {
-	if client, ok := clientMap.Load(clientId); ok {
+func (manager *SwitcherManager) DeRegister(clientId string) {
+	if client, ok := manager.clientMap.Load(clientId); ok {
 		clientIp := client.(*ClientIp)
 		clientIp.mu.Lock()
 		defer clientIp.mu.Unlock()
 
 		for _, element := range clientIp.elements {
-			deRegister(clientIp.ip, element)
+			manager.deRegister(clientIp.ip, element)
 		}
 		// 移除clientMap
-		clientMap.Delete(clientId)
+		manager.clientMap.Delete(clientId)
 	}
 }
 
-func deRegister(ip string, element *ClientElement) {
+func (manager *SwitcherManager) deRegister(ip string, element *ClientElement) {
 	element.nameSpaces.mu.Lock()
 	defer element.nameSpaces.mu.Unlock()
 
@@ -148,17 +153,17 @@ func convertToFieldItem(appName, className, ip string, item *SwitcherItem) *fiel
 	}
 }
 
-func GetNs() []string {
+func (manager *SwitcherManager) GetNs() []string {
 	ns := make([]string, 0)
-	nameSpaceMap.Range(func(key, value any) bool {
+	manager.nameSpaceMap.Range(func(key, value any) bool {
 		ns = append(ns, key.(string))
 		return true
 	})
 	return ns
 }
 
-func GetJSON(namespace string) any {
-	ns, ok := nameSpaceMap.Load(namespace)
+func (manager *SwitcherManager) GetJSON(namespace string) any {
+	ns, ok := manager.nameSpaceMap.Load(namespace)
 	if !ok {
 		return ""
 	}
