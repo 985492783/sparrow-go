@@ -10,6 +10,7 @@ import (
 type SparrowConfig struct {
 	SwitcherConfig *SwitcherConfig
 	ConsoleConfig  *ConsoleConfig
+	DatabaseConfig *DatabaseConfig
 	Auth           map[string]*Auth
 	AuthEnabled    bool
 }
@@ -24,6 +25,10 @@ type ConsoleConfig struct {
 	Addr    string
 }
 
+type DatabaseConfig struct {
+	Endpoint string
+}
+
 type Auth struct {
 	Password string
 	Permits  string
@@ -32,7 +37,7 @@ type Auth struct {
 type LoggerConfig struct {
 }
 
-func newConfig() *SparrowConfig {
+func defaultConfig() *SparrowConfig {
 	return &SparrowConfig{
 		SwitcherConfig: &SwitcherConfig{
 			Enabled: true,
@@ -41,6 +46,9 @@ func newConfig() *SparrowConfig {
 		ConsoleConfig: &ConsoleConfig{
 			Enabled: true,
 			Addr:    ":9800",
+		},
+		DatabaseConfig: &DatabaseConfig{
+			Endpoint: "file:///$HOME/sparrow/data",
 		},
 		Auth:        make(map[string]*Auth),
 		AuthEnabled: false,
@@ -67,7 +75,7 @@ func (config *SparrowConfig) Authority(username, password, permit string) error 
 }
 
 func LoadConfig(path string) (*SparrowConfig, error) {
-	config := newConfig()
+	config := defaultConfig()
 	_, err := toml.DecodeFile(path, config)
 	if err != nil {
 		return nil, err

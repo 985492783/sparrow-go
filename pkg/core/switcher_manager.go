@@ -4,7 +4,6 @@ import (
 	"sync"
 )
 
-// TODO 回调，stream结束后调用manager移除所有注册项
 type SwitcherItem struct {
 	Type      string `json:"type"`
 	Value     any    `json:"value"`

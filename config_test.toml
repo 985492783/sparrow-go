@@ -1,10 +1,16 @@
+authEnabled = false
 
 [SwitcherConfig]
 enabled=true
 addr=":9854"
-password=""
 
 [ConsoleConfig]
 enabled=true
 addr=":9800"
-password=""
+
+[Auth."root"]
+password="123456"
+permits="*:*"
+
+[DatabaseConfig]
+endpoint="file:///$HOME/sparrow/"
