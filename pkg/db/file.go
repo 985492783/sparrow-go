@@ -5,6 +5,7 @@ import (
 	"github.com/gookit/config/v2"
 	"github.com/gookit/config/v2/properties"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -62,7 +63,11 @@ func (db *FileDB) updateData(data *Properties) error {
 }
 
 func newFileDB(config *dBConfig) (*FileDB, error) {
-	path := strings.ReplaceAll(config.path, "$HOME", os.Getenv("HOME"))
+	u, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
+	path := strings.ReplaceAll(config.path, "$HOME", u.HomeDir)
 	tmpDir := filepath.Join(path, ".sparrow")
 	if err := os.RemoveAll(tmpDir); err != nil {
 		return nil, err
