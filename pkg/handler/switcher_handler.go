@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/985492783/sparrow-go/integration"
 	"github.com/985492783/sparrow-go/pkg/core"
 	"github.com/985492783/sparrow-go/pkg/db"
@@ -10,24 +12,25 @@ import (
 
 const (
 	REGISTRY = "registry"
+	QUERY    = "query"
 )
 
 type SwitcherRequest struct {
-	Kind     string
-	AppName  string                                   `validate:"required"`
+	Kind     string                                   `json:"kind"`
+	AppName  string                                   `json:"appName"`
 	Ip       string                                   `json:"ip"`
 	ClassMap map[string]map[string]*core.SwitcherItem `json:"classMap"`
-	integration.Metadata
+	*integration.Metadata
+	*SwitcherQuery
+}
+
+type SwitcherQuery struct {
+	Level string `json:"level"`
 }
 
 type SwitcherResponse struct {
-	Resp       string
-	statusCode int
-	ClassMap   map[string]map[string]*core.SwitcherItem
-}
-
-func (c *SwitcherResponse) Code() int {
-	return c.statusCode
+	*integration.ResponseData
+	ClassMap map[string]map[string]*core.SwitcherItem `json:"classMap"`
 }
 
 type SwitcherHandler struct {
@@ -41,6 +44,8 @@ func (s *SwitcherHandler) GetPermit(payload integration.Request) string {
 	switch request.Kind {
 	case REGISTRY:
 		return utils.AuthSwitcherRegister
+	case QUERY:
+		return utils.AuthSwitcherList
 	}
 	return ""
 }
@@ -49,7 +54,9 @@ var _ server2.RequestHandler = (*SwitcherHandler)(nil)
 
 func (s *SwitcherHandler) GetType() (string, utils.Construct) {
 	return utils.GetType(SwitcherRequest{}), func() integration.Request {
-		return &SwitcherRequest{}
+		return &SwitcherRequest{
+			Metadata: &integration.Metadata{},
+		}
 	}
 }
 
@@ -66,18 +73,27 @@ func (s *SwitcherHandler) Handler(payload integration.Request) integration.Respo
 	switch request.Kind {
 	case REGISTRY:
 		return s.registerHandler(request)
+	case QUERY:
+		return s.queryHandler(request)
 	}
 	return &SwitcherResponse{
-		Resp:       "Not Found " + request.Kind,
-		statusCode: 404,
+		ResponseData: &integration.ResponseData{
+			Resp:       "Not Found " + request.Kind,
+			StatusCode: 404,
+		},
 	}
 }
 
 func (s *SwitcherHandler) registerHandler(request *SwitcherRequest) *SwitcherResponse {
 	if _, ok := s.stream.GetStreams()[request.ClientId]; !ok {
-		return &SwitcherResponse{statusCode: 301, Resp: "clientId Not exist"}
+		return &SwitcherResponse{
+			ResponseData: &integration.ResponseData{
+				StatusCode: 301,
+				Resp:       "clientId Not exist",
+			},
+		}
 	}
-	// TODO 从底层获取持久化配置
+
 	classMap := request.ClassMap
 	mp := make(map[string]map[string]*core.SwitcherItem)
 
@@ -97,7 +113,32 @@ func (s *SwitcherHandler) registerHandler(request *SwitcherRequest) *SwitcherRes
 	}
 	go s.switcherManager.Register(request.ClientId, request.NameSpace, request.AppName, request.Ip, classMap)
 	return &SwitcherResponse{
-		statusCode: 200,
-		ClassMap:   mp,
+		ResponseData: &integration.ResponseData{
+			StatusCode: 200,
+		},
+		ClassMap: mp,
 	}
+}
+
+func (s *SwitcherHandler) queryHandler(request *SwitcherRequest) integration.Response {
+	level := request.SwitcherQuery.Level
+	ns := request.NameSpace
+	response := &SwitcherResponse{
+		ResponseData: &integration.ResponseData{
+			StatusCode: 200,
+		},
+	}
+	switch level {
+	case "ns":
+		response.Resp = fmt.Sprintf("%v", s.switcherManager.GetNs())
+	case "class":
+		data, err := json.Marshal(s.switcherManager.GetJSON(ns))
+		if err != nil {
+			response.StatusCode = 301
+			response.Resp = err.Error()
+		} else {
+			response.Resp = string(data)
+		}
+	}
+	return response
 }

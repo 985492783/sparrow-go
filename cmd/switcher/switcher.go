@@ -37,6 +37,8 @@ func (switcher *SwitcherServer) Start(manager *core.SwitcherManager, database *d
 	stream := server2.NewRequestStream(manager)
 
 	service.RegisterHandler(handler.NewSwitcherHandler(database, manager, stream))
+	service.RegisterHandler(handler.NewSharkHandler())
+
 	go func() {
 		<-switcher.ctx.Done() // 等待停止信号
 		grpcServer.GracefulStop()

@@ -56,6 +56,7 @@ func runServer(cfg *config.SparrowConfig) {
 			}
 		}()
 	}
+
 	log.Println("server started")
 	wg.Wait()
 	log.Println("Shutting down...")

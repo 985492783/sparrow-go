@@ -52,7 +52,8 @@ func NewSwitcherManager() *SwitcherManager {
 func (manager *SwitcherManager) Register(clientId, namespace, appName, ip string, registry map[string]map[string]*SwitcherItem) {
 
 	client, _ := manager.clientMap.LoadOrStore(clientId, &ClientIp{
-		ip: ip,
+		ip:       ip,
+		elements: make([]*ClientElement, 0),
 	})
 
 	client.(*ClientIp).mu.Lock()
@@ -83,6 +84,12 @@ func (manager *SwitcherManager) Register(clientId, namespace, appName, ip string
 				return make(fieldMap)
 			})
 			(map[string]*fieldItem)(fm)[ip] = convertToFieldItem(appName, clazz, ip, field)
+			client.(*ClientIp).elements = append(client.(*ClientIp).elements, &ClientElement{
+				field:      fileName,
+				class:      clazz,
+				appName:    appName,
+				nameSpaces: nameSpace,
+			})
 		}
 	}
 }

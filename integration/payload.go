@@ -33,4 +33,17 @@ type Request interface {
 
 type Response interface {
 	Code() int
+	SetCode(int)
+}
+type ResponseData struct {
+	StatusCode int    `json:"statusCode"`
+	Resp       string `json:"resp"`
+}
+
+func (response *ResponseData) Code() int {
+	return response.StatusCode
+}
+
+func (response *ResponseData) SetCode(code int) {
+	response.StatusCode = code
 }

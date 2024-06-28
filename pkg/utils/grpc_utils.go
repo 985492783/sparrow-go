@@ -70,6 +70,20 @@ func ParseRequest(payload *pb.Payload) (integration.Request, error) {
 	return nil, fmt.Errorf("not found struct type: %s", t)
 }
 
+func ParseResponseByType(payload *pb.Payload, response integration.Response) (integration.Response, error) {
+	err := json.Unmarshal(payload.Body.Value, response)
+	if err != nil {
+		return nil, err
+	}
+	code := payload.Metadata.Headers[integration.StatusCode]
+	if status, err := strconv.Atoi(code); err == nil {
+		response.SetCode(status)
+	} else {
+		return nil, err
+	}
+	return response, nil
+}
+
 func ErrorResponse(code int, error error) *pb.Payload {
 	meta := &pb.Metadata{
 		Type: "error",

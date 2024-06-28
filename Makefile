@@ -6,9 +6,10 @@ VERSION?=1.0.0
 go-mod-vendor:
 	go mod vendor
 
-.PHONY: install
-install:
+.PHONY: build
+build:
 	GOOS=$(OS) GOARCH=$(ARCH) go build -o ./bin/sparrow cmd/sparrow/sparrow.go
+	GOOS=$(OS) GOARCH=$(ARCH) go build -o ./bin/sparrow-cli cmd/cli/sparrow-cli.go
 
 .PHONY: install_docker
 install_docker:

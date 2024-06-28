@@ -12,7 +12,16 @@ import (
 
 type RegistryRequest struct {
 	Ip string `json:"ip"`
-	integration.Metadata
+	*integration.Metadata
+}
+type RegistryResponse struct {
+}
+
+func (response *RegistryResponse) Code() int {
+	return 200
+}
+
+func (response *RegistryResponse) SetCode(i int) {
 }
 
 type RequestServerStream struct {
@@ -27,7 +36,9 @@ var stream *RequestServerStream
 func NewRequestStream(manager *core.SwitcherManager) *RequestServerStream {
 	if stream == nil {
 		utils.RegistryConstruct(utils.GetType(RegistryRequest{}), func() integration.Request {
-			return &RegistryRequest{}
+			return &RegistryRequest{
+				Metadata: &integration.Metadata{},
+			}
 		})
 		stream = &RequestServerStream{
 			streamMap: make(map[string]pb.BiRequestStream_RequestBiStreamServer),
@@ -67,6 +78,11 @@ func (server *RequestServerStream) RequestBiStream(stream pb.BiRequestStream_Req
 				clientId = registryRequest.ClientId
 				server.addStream(clientId, stream)
 				open = true
+				response, err := utils.ConvertResponse(&RegistryResponse{})
+				if err != nil {
+					continue
+				}
+				stream.Send(response)
 			}
 		}
 		log.Println("deregister")

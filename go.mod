@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/BurntSushi/toml v1.4.0
+	github.com/chzyer/readline v1.5.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gookit/config/v2 v2.2.5
 	github.com/spf13/cobra v1.8.1
